@@ -1,0 +1,194 @@
+﻿  main.cpp
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(141,22): warning C4018: '<': signed/unsigned mismatch
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(148,23): warning C4018: '<': signed/unsigned mismatch
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(156,22): warning C4018: '<': signed/unsigned mismatch
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(160,70): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(160,59): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(160,106): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(160,101): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(165,66): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(165,55): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(165,97): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(199,22): warning C4018: '<': signed/unsigned mismatch
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(207,22): warning C4018: '<': signed/unsigned mismatch
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(211,70): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(211,59): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(211,116): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(211,101): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(216,66): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(216,55): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(216,112): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(216,97): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(227,22): warning C4018: '<': signed/unsigned mismatch
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(238,69): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(238,58): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(242,69): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(242,58): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(263,26): warning C4244: '=': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(264,26): warning C4244: '=': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(278,19): warning C4244: 'initializing': conversion from 'T' to 'int', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(279,19): warning C4244: 'initializing': conversion from 'T' to 'int', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(281,27): warning C4244: 'initializing': conversion from 'T' to 'int', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(282,27): warning C4244: 'initializing': conversion from 'T' to 'int', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(285,28): warning C4244: '=': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(286,28): warning C4244: '=': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(295,14): warning C4244: 'initializing': conversion from 'T' to 'int', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(296,14): warning C4244: 'initializing': conversion from 'T' to 'int', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(297,14): warning C4244: 'initializing': conversion from 'T' to 'int', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(298,14): warning C4244: 'initializing': conversion from 'T' to 'int', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(308,66): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(308,55): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(308,115): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(308,97): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(341,11): warning C4244: 'initializing': conversion from 'T' to 'int', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(342,11): warning C4244: 'initializing': conversion from 'T' to 'int', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\sthun\source\repos\COM326GroupProject - Copy\main.cpp(291): warning C4715: 'Game::CalcMouseLocation': not all control paths return a value
+  COM326GroupProject.vcxproj -> C:\Users\sthun\source\repos\COM326GroupProject - Copy\Debug\COM326GroupProject.exe

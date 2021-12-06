@@ -1,6 +1,10 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\lib\\SFML-2.5.1",
+    "\\lib\\SFML-2.5.1\\include",
+    "\\src"
   ],
+  "SelectedNode": "\\Game.cpp",
   "PreviewInSolutionExplorer": false
 }

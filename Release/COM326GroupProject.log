@@ -1,0 +1,6 @@
+﻿  Pieces.cpp
+  Generating code
+  Previous IPDB and IOBJ mismatch, fall back to full compilation.
+  All 306 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  COM326GroupProject.vcxproj -> C:\Users\sthun\source\repos\COM326GroupProject - Copy\Release\COM326GroupProject.exe
