@@ -1,8 +1,9 @@
 //include classes and headers
 #include "common.hpp"
-#include "PiecesLogic.h"
 
 using namespace::std;
+using namespace::sf;
+
 
 class BoardPiece {
 private:
@@ -10,8 +11,8 @@ private:
 
     RectangleShape piece;
 
-    int pieceType; // 1 = rook, 2 = knight, 3 = bishop, 4 = king, 5 = queen, 6 = pawn, 7 = light tile, 8 = dark tile.
- 
+    int pieceType; // 0 = rook, 1 = knight, 2 = bishop, 3 = king, 4 = queen, 5 = pawn, 6 = light tile, 7 = dark tile.
+    Vector2f position;
 
 
 public:
@@ -23,7 +24,6 @@ public:
 
     void setPieceType(int);
     void setBoardLocationArray();
-    void CalcMouseLocation(Vector2i pos);
    
 };
 
@@ -39,6 +39,10 @@ BoardPiece::BoardPiece(Vector2f size, Vector2f position, Color color, int pType)
 
 RectangleShape& BoardPiece::getShape() {
     return piece;
+}
+
+int BoardPiece::getPieceType() {
+    return pieceType;
 }
 
 class Game {
@@ -72,42 +76,32 @@ public:
     void initWhitePieces();
     void initBlackPieces();
     void initBoardPieces();
-    void SetBoardLocationArray();
-    void CalculateMove(Vector2i pos[]);
-    void CalculatePawnMove(Vector2f oldBoardSquare, Vector2f newBoardSquare, int chessPiece, bool isKingCheck);
-    void CalculateRookMove(Vector2f oldBoardSquare, Vector2f newBoardSquare, int chessPiece, bool isKingCheck);
-    void CalculateKnightMove(Vector2f oldBoardSquare, Vector2f newBoardSquare, int chessPiece, bool isKingCheck);
-    void CalculateBishopMove(Vector2f oldBoardSquare, Vector2f newBoardSquare, int chessPiece, bool isKingCheck);
-    void CalculateQueenMove(Vector2f oldBoardSquare, Vector2f newBoardSquare, int chessPiece, bool isKingCheck);
-    void CalculateKingMove(Vector2f oldBoardSquare, Vector2f newBoardSquare, int chessPiece, bool isKingCheck);
-    void UpdateWhiteChessPiece(int chessPiece, int oldX, int oldY, int newX, int newY);
-    void UpdateBlackChessPiece(int chessPiece, int oldX, int oldY, int newX, int newY);
-    void RemoveEnemyChessPiece(int enemyPiece, int enemyLocX, int enemyLocY);
-    bool CheckForTeamPiece(int chessPiece, int newLocX, int newLocY);
+    void CalculateMove(Vector2i mouseClick1, Vector2i mouseClick2);
+    void CalculatePawnMove(BoardPiece oldBoardSquare, BoardPiece newBoardSquare, bool isKingCheck);
+    void CalculateRookMove(BoardPiece oldBoardSquare, BoardPiece newBoardSquare, bool isKingCheck);
+    void CalculateKnightMove(BoardPiece oldBoardSquare, BoardPiece newBoardSquare, bool isKingCheck);
+    void CalculateBishopMove(BoardPiece oldBoardSquare, BoardPiece newBoardSquare, bool isKingCheck);
+    void CalculateQueenMove(BoardPiece oldBoardSquare, BoardPiece newBoardSquare, bool isKingCheck);
+    void CalculateKingMove(BoardPiece oldBoardSquare, BoardPiece newBoardSquare, bool isKingCheck);
+    void UpdateWhiteChessPiece(BoardPiece oldBoardSquare, BoardPiece newBoardSquare);
+    void UpdateBlackChessPiece(BoardPiece oldBoardSquare, BoardPiece newBoardSquare);
+    void RemoveEnemyChessPiece(BoardPiece newBoardSquare);
+    bool CheckForTeamPiece(BoardPiece newBoardSquare);
     void IsKingInCheck();
 
-    Vector2f CalcMouseLocation(Vector2f pos);
-    Vector2i pos[2];
-    Vector2f currentBoardSquare;
+    BoardPiece CalcMouseLocation(Vector2f pos);
+    Vector2i mouseClick1;
+    Vector2i mouseClick2;
+    //BoardPiece currentBoardSquare;
+    //BoardPiece whiteKingTile;
+    //BoardPiece blackKingTile;
     int mouseCount = 0;
     int whiteMoveCount = 0;
     int blackMoveCount = 0;
     bool isKingInCheck = false;
+    bool playerWhite = true;
 
     void loop();
-
-    //void movePiece(int, int, int); // X, Y, piece to move.
-    Vector2f BoardLocationArray[8][8];
-    Vector2f coords;
-    int ChessPieceArray[8][8] =
-    { 1, 2, 3, 4, 5, 3, 2, 1,
-      6, 6, 6, 6, 6, 6, 6, 6,
-      0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0,
-     -6,-6,-6,-6,-6,-6,-6,-6,
-     -1,-2,-3,-4,-5,-3,-2,-1, };
 };
 
 Game::Game() {
@@ -115,7 +109,7 @@ Game::Game() {
     tileWidth = 100;
 
     // Init white piece variables.
-    chessPieceOrder = {1, 2, 3, 4, 5, 3, 2, 1, 6};
+    chessPieceOrder = {0, 1, 2, 3, 4, 2, 1, 0, 5};
     whitePieceTextureNames = {
         "w_rook_png_128px.png", "w_knight_png_128px.png",
         "w_bishop_png_128px.png", "w_king_png_128px.png",
@@ -155,19 +149,12 @@ void Game::initWhitePieces() {
         }
     }
 
-    for (int i = 0; i < blackPieceTextureNames.size(); i++) {
-        if (!blackPieceTextures[i].loadFromFile("bin/images/" + blackPieceTextureNames[i])) {
-            std::cout << "Error getting " << blackPieceTextureNames[i] << ". Shutting down." << std::endl;
-            //return 1;
-        }
-    }
-
     // Create white Pieces.
     for(int i = 0; i < chessPieceOrder.size(); i++) {
-        if(chessPieceOrder[i] == 6) {
+        if(chessPieceOrder[i] == 5) {
             // Create white pawns.
             for(int j = 0; j < 8; j++) {
-                whitePieces.push_back(BoardPiece(Vector2f(tileWidth, tileWidth), Vector2f(tileWidth * j, tileWidth *6), Color::White, chessPieceOrder[i]));
+                whitePieces.push_back(BoardPiece(Vector2f(tileWidth, tileWidth), Vector2f(tileWidth * j, tileWidth * 6), Color::White, chessPieceOrder[i]));
                 whitePieces[i + j].getShape().setTexture(&whitePieceTextures[i]);
             }
         } else {
@@ -189,15 +176,16 @@ void Game::initBlackPieces() {
 
     // Create black Pieces.
     for(int i = 0; i < chessPieceOrder.size(); i++) {
-        if(chessPieceOrder[i] == 6) {
-            // Create white pawns.
+        if(chessPieceOrder[i] == 5) {
+            // Create Black pawns.
             for(int j = 0; j < 8; j++) {
-                blackPieces.push_back(BoardPiece(Vector2f(tileWidth, tileWidth), Vector2f(tileWidth * j, tileWidth), Color::White, chessPieceOrder[i]));
+                blackPieces.push_back(BoardPiece(Vector2f(tileWidth, tileWidth), Vector2f(tileWidth * j, tileWidth), Color::Black, chessPieceOrder[i]));
                 blackPieces[i + j].getShape().setTexture(&blackPieceTextures[i]);
+
             }
         } else {
-            // Create all other white pieces.
-            blackPieces.push_back(BoardPiece(Vector2f(tileWidth, tileWidth), Vector2f(tileWidth * i, 0), Color::White, chessPieceOrder[i]));
+            // Create all other Black pieces.
+            blackPieces.push_back(BoardPiece(Vector2f(tileWidth, tileWidth), Vector2f(tileWidth * i, 0), Color::Black, chessPieceOrder[i]));
             blackPieces[i].getShape().setTexture(&blackPieceTextures[i]);
         }
     }
@@ -206,6 +194,7 @@ void Game::initBlackPieces() {
 void Game::initBoardPieces() {
     int startingColor = 0; // 0 = light tile, 1 = dark tile
     int currentColor = startingColor;
+    Vector2f position;
 
     // Create board piece textures.
     for(int i = 0; i < boardTileTextureNames.size(); i++) {
@@ -218,12 +207,15 @@ void Game::initBoardPieces() {
     // Create board pieces.
     for(int i = 0; i < 8; i++) {
         for(int j = 0; j < 8; j++) {
-            if(currentColor == 0) {
-                boardTiles.push_back(BoardPiece(Vector2f(tileWidth, tileWidth), BoardLocationArray[i][j], Color::White, 6));
+            position.x = tileWidth * j;
+            position.y = tileWidth * i;
+            if (currentColor == 0) {
+                boardTiles.push_back(BoardPiece(Vector2f(tileWidth, tileWidth), position, Color::White, 6));
                 boardTiles[(i * 8) + j].getShape().setTexture(&boardTileTextures[0]);
                 currentColor++;
-            } else {
-                boardTiles.push_back(BoardPiece(Vector2f(tileWidth, tileWidth),  BoardLocationArray[i][j], Color::White, 7));
+            }
+            else {
+                boardTiles.push_back(BoardPiece(Vector2f(tileWidth, tileWidth), position, Color::White, 7));
                 boardTiles[(i * 8) + j].getShape().setTexture(&boardTileTextures[1]);
                 currentColor--;
             }
@@ -239,183 +231,221 @@ void Game::initBoardPieces() {
     }
 }
 
-void Game::SetBoardLocationArray() {
+BoardPiece Game::CalcMouseLocation(Vector2f pos) {
 
-    //calculating the positions of each square in the board by multiplying by the width of each tile- SH
-    for (int i = 0; i < 8; i++) {
-        for (int j = 0; j < 8; j++) {
-            coords.y = j * tileWidth;
-            coords.x = i * tileWidth;
-            BoardLocationArray[i][j] = coords;
-        }
-    }
+    int mouseClickX = pos.x;
+    int mouseClickY = pos.y;
 
-}
+    for (int i = 0; i < boardTiles.size(); i++) {
+        Vector2f tilePosition = boardTiles[i].getShape().getPosition();
 
-Vector2f Game::CalcMouseLocation(Vector2f pos) {
+        int boardLocX = tilePosition.x + 100;
+        int boardLocY = tilePosition.y + 100;
+        if (mouseClickX >= tilePosition.x && mouseClickX <= boardLocX) {
 
-    Vector2f coords;
-    //calculate which tile the player is on 
-    //Looping through the board array and checking if the mouse position is within the boundaries - SH
-    for (int i = 0; i < 8; i++) {
-        for (int j = 0; j < 8; j++) {
-            int x = pos.x;
-            int y = pos.y;
-            Vector2f boardLocation = BoardLocationArray[i][j];
-            int boardLocX = boardLocation.x + 100;
-            int boardLocY = boardLocation.y + 100;
+            if (mouseClickY >= tilePosition.y && mouseClickY <= boardLocY) {
+                BoardPiece boardLocation = boardTiles[i];
+                for (int i = 0; i < whitePieces.size(); i++) {
+                    if (boardLocation.getShape().getPosition() == whitePieces[i].getShape().getPosition()) {
+                        return whitePieces[i];
+                    }
+                }
+                for (int i = 0; i < blackPieces.size(); i++) {
+                    if (boardLocation.getShape().getPosition() == blackPieces[i].getShape().getPosition()) {
+                        return blackPieces[i];
+                    }
+                }
 
-            if (x >= boardLocation.x && x <= boardLocX && y >= boardLocation.y && y <= boardLocY) {
-                coords.x = i;
-                coords.y = j;
-                return coords;
+                return boardTiles[i];
             }
         }
     }
 }
 
-void Game::CalculatePawnMove(Vector2f oldBoardSquare, Vector2f newBoardSquare, int chessPiece, bool isKingCheck) {
+void Game::CalculatePawnMove(BoardPiece oldBoardSquare, BoardPiece newBoardSquare, bool isKingCheck) {
 
-    int oldX = oldBoardSquare.x;
-    int oldY = oldBoardSquare.y;
-    int newX = newBoardSquare.x;
-    int newY = newBoardSquare.y;
-    int calcYDiff = newY - oldY;
-    int calcXDiff = newX - oldX;
-    int enemyPiece = ChessPieceArray[newX][newY];
+    Vector2f oldBoardTile = oldBoardSquare.getShape().getPosition();
+    Vector2f newBoardTile = newBoardSquare.getShape().getPosition();
+    int calcYDiff = newBoardTile.y - oldBoardTile.y;
+    int calcXDiff = newBoardTile.x - oldBoardTile.x;
+    bool teamPieceInNewTile = CheckForTeamPiece(newBoardSquare);
 
 
-    if (chessPiece < 0) { //white move
-        if (whiteMoveCount + 1 == 1 && calcYDiff != 0 && calcYDiff <= -2 && oldX == newX) { //if first move pawn can move 2 spaces
-            UpdateWhiteChessPiece(chessPiece, oldX, oldY, newX, newY);
+    if (!teamPieceInNewTile && !isKingInCheck) {
 
-        }
-        else if (enemyPiece == 0 && calcYDiff != 0 && calcYDiff == -1 && oldX == newX) { //after first move pawn can only move 1 tile up
-            UpdateWhiteChessPiece(chessPiece, oldX, oldY, newX, newY);
-        }
-        else if (enemyPiece > 0 && calcYDiff == -1 && abs(calcXDiff) == 1) {//if enemy piece is in new location pawn can move diagonally
-            if (!isKingCheck) {
-                //valid - update chessPieceArray & Move image to new location
-                UpdateWhiteChessPiece(chessPiece, oldX, oldY, newX, newY);
-                RemoveEnemyChessPiece(enemyPiece, newX, newY);
-            }
-            else {
-                isKingInCheck = true;
-            }
-        }
-        else {
-            //not valid - send error
-            //only send error message when we aren't checking for king in check
-            if (!isKingCheck) {
+        if (oldBoardSquare.getShape().getFillColor() == Color::White) { //white move
+            if (whiteMoveCount + 1 == 1 && 
+                calcYDiff != 0 && 
+                calcYDiff <= -200 && 
+                oldBoardTile.x == newBoardTile.x) { //if first move pawn can move 2 spaces
+                UpdateWhiteChessPiece(oldBoardSquare, newBoardSquare);
+                playerWhite = !playerWhite;
 
             }
-
-        }
-    }
-    else if (chessPiece > 0){ //black move
-        if (blackMoveCount + 1 == 1 && calcYDiff != 0 && calcYDiff <= 2 && oldX == newX) {
-            UpdateBlackChessPiece(chessPiece, oldX, oldY, newX, newY);
-
-        }
-        else if (enemyPiece < 0 && calcYDiff != 0 && calcYDiff == 1 && oldX == newX) { //after first move pawn can only move 1 tile up
-            UpdateBlackChessPiece(chessPiece, oldX, oldY, newX, newY);
-
-        }
-        else if (enemyPiece != 0 && calcYDiff == 1 && abs(calcXDiff) == 1) {//if enemy piece is in new location pawn can move diagonally
-            if (!isKingCheck) {
-                UpdateBlackChessPiece(chessPiece, oldX, oldY, newX, newY);
-                RemoveEnemyChessPiece(enemyPiece, newX, newY);
+            else if (newBoardSquare.getPieceType() > 5 && 
+                calcYDiff != 0 && calcYDiff == -100 && 
+                oldBoardTile.x == newBoardTile.x) { //after first move pawn can only move 1 tile up
+                UpdateWhiteChessPiece(oldBoardSquare, newBoardSquare);
+                playerWhite = !playerWhite;
             }
-            else {
-                isKingInCheck = true;
-            }
-
-        }
-        else {
-            //not valid - send error
-            //only send error message if we aren't checking for king in check
-            if (!isKingCheck) {
-
-            }
-
-        }
-    }
-
-    //TRANSFORM PAWN WHEN IT REACHES OTHER SIDE - SH
-    if (newY == 0 || newY == 7) {
-        //add window with the pawn options
-        // once user clicks on option, update the ChessArray with new piece type in the new location
-    }
-}
-
-void Game::CalculateRookMove(Vector2f oldBoardSquare, Vector2f newBoardSquare, int chessPiece, bool isKingCheck) {
-    int oldX = oldBoardSquare.x;
-    int oldY = oldBoardSquare.y;
-    int newX = newBoardSquare.x;
-    int newY = newBoardSquare.y;
-    int calcYDiff = newY - oldY;
-    int calcXDiff = newX - oldX;
-    int enemyPiece = ChessPieceArray[newX][newY];
-    bool isPathClear = true;
-    int currentTile;
-
-    //figure out if the path is clear from old location to new location
-    if (calcYDiff == 0 && calcXDiff < 0) { //left across
-        for (int i = oldX; i >= newX; i--) {
-            currentTile = ChessPieceArray[oldY][i -1];
-            if (currentTile != 0) {
-                isPathClear = false;
-                break;
-            }
-        }
-    }
-    else if (calcYDiff == 0 && calcXDiff > 0) { //right across
-        
-        for (int i = oldX; i <= newX; i++) {
-            currentTile = ChessPieceArray[oldY][i+1];
-            if (currentTile != 0) {
-                isPathClear = false;
-                break;
-            }
-        }
-
-    }
-    else if (calcYDiff > 0 && calcXDiff == 0) {//vertical down
-        
-        for (int i = oldY; i <= newY; i++) {
-            currentTile = ChessPieceArray[i +1][oldX];
-            if (currentTile != 0) {
-                isPathClear = false;
-                break;
-            }
-        }
-    }
-    else if(calcYDiff < 0 && calcXDiff == 0) {//vertical up
-        for (int i = oldY; i >= newY; i--) {
-            currentTile = ChessPieceArray[i -1][oldX];
-            if (currentTile != 0) {
-                isPathClear = false;
-                break;
-            }
-        }
-    }
-
-
-    if (isPathClear) {
-        if (calcYDiff == 0 && abs(calcXDiff) > 0 ||
-            (abs(calcYDiff) > 0 && calcXDiff == 0)) { 
-            if (!isKingCheck) {
-                if (chessPiece < 0) {
-                    UpdateWhiteChessPiece(chessPiece, oldX, oldY, newX, newY);
-
+            else if (newBoardSquare.getPieceType() < 6 && calcYDiff == -100 && abs(calcXDiff) == 100) {//if enemy piece is in new location pawn can move diagonally
+                if (!isKingCheck) {
+                    //valid - update chessPieceArray & Move image to new location
+                    RemoveEnemyChessPiece(newBoardSquare);
+                    UpdateWhiteChessPiece(oldBoardSquare, newBoardSquare);
+                    
+                    playerWhite = !playerWhite;
                 }
                 else {
-                    UpdateBlackChessPiece(chessPiece, oldX, oldY, newX, newY);
+                    isKingInCheck = true;
                 }
-                RemoveEnemyChessPiece(enemyPiece, newX, newY);
             }
             else {
-                isKingInCheck = true;
+                //not valid - send error
+                //only send error message when we aren't checking for king in check
+                if (!isKingCheck) {
+
+                }
+
+            }
+        }
+        else if (oldBoardSquare.getShape().getFillColor() == Color::Black) { //black move
+            if (blackMoveCount + 1 == 1 && calcYDiff != 0 && calcYDiff <= 200 && oldBoardTile.x == newBoardTile.x) {
+                UpdateBlackChessPiece(oldBoardSquare, newBoardSquare);
+                playerWhite = !playerWhite;
+
+            }
+            else if (newBoardSquare.getPieceType() > 5 && calcYDiff != 0 && calcYDiff == 100 && oldBoardTile.x == newBoardTile.x) { //after first move pawn can only move 1 tile up
+                UpdateBlackChessPiece(oldBoardSquare, newBoardSquare);
+                playerWhite = !playerWhite;
+
+            }
+            else if (newBoardSquare.getPieceType() > 5 && calcYDiff == 100 && abs(calcXDiff) == 100) {//if enemy piece is in new location pawn can move diagonally
+                if (!isKingCheck) {
+                    UpdateBlackChessPiece(oldBoardSquare, newBoardSquare);
+                    RemoveEnemyChessPiece(newBoardSquare);
+                    playerWhite = !playerWhite;
+                }
+                else {
+                    isKingInCheck = true;
+                }
+
+            }
+            else {
+                //not valid - send error
+                //only send error message if we aren't checking for king in check
+                if (!isKingCheck) {
+                    // Error message goes here
+                }
+
+            }
+        }
+
+    }
+}
+
+void Game::CalculateRookMove(BoardPiece oldBoardSquare, BoardPiece newBoardSquare, bool isKingCheck) {
+    Vector2f oldBoardTile = oldBoardSquare.getShape().getPosition();
+    Vector2f newBoardTile = oldBoardSquare.getShape().getPosition();
+    int calcYDiff = newBoardTile.y - oldBoardTile.y;
+    int calcXDiff = newBoardTile.x - oldBoardTile.x;
+    bool teamPieceInNewTile = CheckForTeamPiece(newBoardSquare);
+    bool isPathClear = true;
+    BoardPiece currentTile = oldBoardSquare;
+    int locationInc = 1;
+
+
+    //figure out if the path is clear from old location to new location
+    if (!teamPieceInNewTile && !isKingInCheck) {
+
+        if (calcYDiff == 0 && calcXDiff < 0) { //left across
+            locationInc = 1;
+            while (currentTile.getShape().getPosition() != newBoardSquare.getShape().getPosition()) {
+                Vector2f newLocation;
+                newLocation.x = currentTile.getShape().getPosition().x - locationInc;
+                newLocation.y = currentTile.getShape().getPosition().y;
+                currentTile.getShape().setPosition(newLocation);
+
+                if (currentTile.getPieceType() < 6) {
+                    isPathClear = false;
+                    break;
+                }
+                locationInc++;
+            }
+            
+        }
+        else if (calcYDiff == 0 && calcXDiff > 0) { //right across
+            locationInc = 1;
+            while (currentTile.getShape().getPosition() != newBoardSquare.getShape().getPosition()) {
+                Vector2f newLocation;
+                newLocation.x = currentTile.getShape().getPosition().x + locationInc;
+                newLocation.y = currentTile.getShape().getPosition().y;
+                currentTile.getShape().setPosition(newLocation);
+
+                if (currentTile.getPieceType() < 6) {
+                    isPathClear = false;
+                    break;
+                }
+                locationInc++;
+            }
+
+        }
+        else if (calcYDiff > 0 && calcXDiff == 0) {//vertical down
+            
+            locationInc = 1;
+            while (currentTile.getShape().getPosition() != newBoardSquare.getShape().getPosition()) {
+                Vector2f newLocation;
+                newLocation.x = currentTile.getShape().getPosition().x;
+                newLocation.y = currentTile.getShape().getPosition().y + locationInc;
+                currentTile.getShape().setPosition(newLocation);
+
+                if (currentTile.getPieceType() < 6) {
+                    isPathClear = false;
+                    break;
+                }
+                locationInc++;
+            }
+        }
+        else if (calcYDiff < 0 && calcXDiff == 0) {//vertical up
+            locationInc = 1;
+            while (currentTile.getShape().getPosition() != newBoardSquare.getShape().getPosition()) {
+                Vector2f newLocation;
+                newLocation.x = currentTile.getShape().getPosition().x;
+                newLocation.y = currentTile.getShape().getPosition().y - locationInc;
+                currentTile.getShape().setPosition(newLocation);
+
+                if (currentTile.getPieceType() < 6) {
+                    isPathClear = false;
+                    break;
+                }
+                locationInc++;
+            }
+        }
+
+
+        if (isPathClear) {
+            if ((calcYDiff == 0 && abs(calcXDiff) > 0) ||  // Rook going horizontally
+                (abs(calcYDiff) > 0 && calcXDiff == 0)) {  // Rook going Vetically
+                if (!isKingCheck) {
+                    if (oldBoardSquare.getShape().getFillColor() == Color::White) {
+                        UpdateWhiteChessPiece(oldBoardSquare, newBoardSquare);
+
+                    }
+                    else {
+                        UpdateBlackChessPiece(oldBoardSquare, newBoardSquare);
+                    }
+                    RemoveEnemyChessPiece(newBoardSquare);
+                    playerWhite = !playerWhite;
+                }
+                else {
+                    isKingInCheck = true;
+                }
+            }
+            else {
+                //invalid move send error
+                if (!isKingCheck) {
+
+                }
             }
         }
         else {
@@ -424,40 +454,32 @@ void Game::CalculateRookMove(Vector2f oldBoardSquare, Vector2f newBoardSquare, i
 
             }
         }
-    }
-    else {
-        //invalid move send error
-        if (!isKingCheck) {
 
-        }
     }
-
 }
 
-void Game::CalculateKnightMove(Vector2f oldBoardSquare, Vector2f newBoardSquare, int chessPiece, bool isKingCheck) {
-    int oldX = oldBoardSquare.x;
-    int oldY = oldBoardSquare.y;
-    int newX = newBoardSquare.x;
-    int newY = newBoardSquare.y;
-    int calcYDiff = newY - oldY;
-    int calcXDiff = newX - oldX;
-    int enemyPiece = ChessPieceArray[newX][newY];
-    bool isPathClear = CheckForTeamPiece(chessPiece, newX, newY);
+void Game::CalculateKnightMove(BoardPiece oldBoardSquare, BoardPiece newBoardSquare, bool isKingCheck) {
+    Vector2f oldBoardTile = oldBoardSquare.getShape().getPosition();
+    Vector2f newBoardTile = oldBoardSquare.getShape().getPosition();
+    int calcYDiff = newBoardTile.y - oldBoardTile.y;
+    int calcXDiff = newBoardTile.x - oldBoardTile.x;
+    bool teamPieceInNewTile = CheckForTeamPiece(newBoardSquare);
 
     //L-shape move validation - SH
-    if (isPathClear) {
-        if ((calcYDiff == 2 && abs(calcXDiff) == 1) || //2 down & 1 across
-            (calcYDiff == -2 && abs(calcXDiff) == 1) || // 2 up & 1 across
-            (abs(calcYDiff) == 1 && calcXDiff == 2) || //2 right & 1 up/down
-            (abs(calcYDiff) == 1 && calcXDiff == -2)){ //2 left & 1 up/down
+    if (!teamPieceInNewTile && !isKingInCheck) {
+        if ((calcYDiff == 200 && abs(calcXDiff) == 100) || //2 down & 1 across
+            (calcYDiff == -200 && abs(calcXDiff) == 100) || // 2 up & 1 across
+            (abs(calcYDiff) == 100 && calcXDiff == 200) || //2 right & 1 up/down
+            (abs(calcYDiff) == 100 && calcXDiff == -200)){ //2 left & 1 up/down
             if (!isKingCheck) {
-                if (chessPiece > 0) {
-                    UpdateBlackChessPiece(chessPiece, oldX, oldY, newX, newY);
+                if (oldBoardSquare.getShape().getFillColor() == Color::White) {
+                    UpdateWhiteChessPiece(oldBoardSquare, newBoardSquare);
                 }
                 else {
-                    UpdateWhiteChessPiece(chessPiece, oldX, oldY, newX, newY);
+                    UpdateBlackChessPiece(oldBoardSquare, newBoardSquare);
                 }
-                RemoveEnemyChessPiece(enemyPiece, newX, newY);
+                RemoveEnemyChessPiece(newBoardSquare);
+                playerWhite = !playerWhite;
             }
             else {
                 isKingInCheck = true;
@@ -481,178 +503,252 @@ void Game::CalculateKnightMove(Vector2f oldBoardSquare, Vector2f newBoardSquare,
    
 }
 
-void Game::CalculateBishopMove(Vector2f oldBoardSquare, Vector2f newBoardSquare, int chessPiece, bool isKingCheck) {
-    int oldX = oldBoardSquare.x;
-    int oldY = oldBoardSquare.y;
-    int newX = newBoardSquare.x;
-    int newY = newBoardSquare.y;
-    int calcYDiff = newY - oldY;
-    int calcXDiff = newX - oldX;
-    int enemyPiece = ChessPieceArray[newX][newY];
+void Game::CalculateBishopMove(BoardPiece oldBoardSquare, BoardPiece newBoardSquare, bool isKingCheck) {
+    Vector2f oldBoardTile = oldBoardSquare.getShape().getPosition();
+    Vector2f newBoardTile = oldBoardSquare.getShape().getPosition();
+    int calcYDiff = newBoardTile.y - oldBoardTile.y;
+    int calcXDiff = newBoardTile.x - oldBoardTile.x;
+    bool teamPieceInNewTile = CheckForTeamPiece(newBoardSquare);
     bool isPathClear = true;
-    int currentTile;
+    BoardPiece currentTile = oldBoardSquare;
+    int locationInc = 1;
 
     //figure out if the path is clear from old location to new location
-    if (calcYDiff > 0 && calcXDiff > 0 && abs(calcYDiff) == abs(calcXDiff)) { //Down Right Diag
-        for (int i = oldX + 1; i <= newX; i++) {
-            currentTile = ChessPieceArray[oldY + 1][oldX];
-            if (currentTile != 0) {
-                isPathClear = false;
-                break;
+    if (!teamPieceInNewTile && !isKingInCheck) {
+        if (calcYDiff > 0 && calcXDiff > 0 && abs(calcYDiff) == abs(calcXDiff)) { //Down Right Diag
+            locationInc = 1;
+            while (currentTile.getShape().getPosition() != newBoardSquare.getShape().getPosition()) {
+                Vector2f newLocation;
+                newLocation.x = currentTile.getShape().getPosition().x + locationInc;
+                newLocation.y = currentTile.getShape().getPosition().y + locationInc;
+                currentTile.getShape().setPosition(newLocation);
+
+                if (currentTile.getPieceType() < 6) {
+                    isPathClear = false;
+                    break;
+                }
+                locationInc++;
             }
         }
-    }
-    else if (calcYDiff > 0 && calcXDiff < 0 && abs(calcYDiff) == abs(calcXDiff)) { //Down Left Diag
-        for (int i = oldX - 1; i >= newX; i--) {
-            currentTile = ChessPieceArray[oldY + 1][i];
-            if (currentTile != 0) {
-                isPathClear = false;
-                break;
+        else if (calcYDiff > 0 && calcXDiff < 0 && abs(calcYDiff) == abs(calcXDiff)) { //Down Left Diag
+            locationInc = 1;
+            while (currentTile.getShape().getPosition() != newBoardSquare.getShape().getPosition()) {
+                Vector2f newLocation;
+                newLocation.x = currentTile.getShape().getPosition().x - locationInc;
+                newLocation.y = currentTile.getShape().getPosition().y + locationInc;
+                currentTile.getShape().setPosition(newLocation);
+
+                if (currentTile.getPieceType() < 6) {
+                    isPathClear = false;
+                    break;
+                }
+                locationInc++;
+            }
+        }
+        else if (calcYDiff < 0 && calcXDiff > 0 && abs(calcYDiff) == abs(calcXDiff)) {//Up left diag
+            locationInc = 1;
+            while (currentTile.getShape().getPosition() != newBoardSquare.getShape().getPosition()) {
+                Vector2f newLocation;
+                newLocation.x = currentTile.getShape().getPosition().x - locationInc;
+                newLocation.y = currentTile.getShape().getPosition().y - locationInc;
+                currentTile.getShape().setPosition(newLocation);
+
+                if (currentTile.getPieceType() < 6) {
+                    isPathClear = false;
+                    break;
+                }
+                locationInc++;
+            } 
+        }
+        else if (calcYDiff < 0 && calcXDiff > 0 && abs(calcYDiff) == abs(calcXDiff)) {//Up Right Diag
+            locationInc = 1;
+            while (currentTile.getShape().getPosition() != newBoardSquare.getShape().getPosition()) {
+                Vector2f newLocation;
+                newLocation.x = currentTile.getShape().getPosition().x + locationInc;
+                newLocation.y = currentTile.getShape().getPosition().y - locationInc;
+                currentTile.getShape().setPosition(newLocation);
+
+                if (currentTile.getPieceType() < 6) {
+                    isPathClear = false;
+                    break;
+                }
+                locationInc++;
             }
         }
 
-    }
-    else if (calcYDiff < 0 && calcXDiff > 0 && abs(calcYDiff) == abs(calcXDiff)) {//Up left diag
-        for (int i = oldY -1; i >= newY; i--) {
-            currentTile = ChessPieceArray[oldY - 1][i];
-            if (currentTile != 0) {
-                isPathClear = false;
-                break;
-            }
-        }
-    }
-    else if (calcYDiff < 0 && calcXDiff > 0 && abs(calcYDiff) == abs(calcXDiff)) {//Up Right Diag
-        for (int i = oldY; i >= newY; i--) {
-            currentTile = ChessPieceArray[oldY - 1][i];
-            if (currentTile != 0) {
-                isPathClear = false;
-                break;
-            }
-        }
-    }
-
-    //L-shape move validation - SH
-    if (isPathClear) {
-        if ((calcYDiff == 2 && abs(calcXDiff) == 1) || //2 down & 1 across
-            (calcYDiff == -2 && abs(calcXDiff) == 1) || // 2 up & 1 across
-            (abs(calcYDiff) == 1 && calcXDiff == 2) || //2 right & 1 up/down
-            (abs(calcYDiff) == 1 && calcXDiff == -2)) { //2 left & 1 up/down
-            if (!isKingCheck) {
-                if (chessPiece > 0) {
-                    UpdateBlackChessPiece(chessPiece, oldX, oldY, newX, newY);
+        //L-shape move validation - SH
+        if (isPathClear) {
+            if ((calcYDiff == 200 && abs(calcXDiff) == 100) || //2 down & 1 across
+                (calcYDiff == -200 && abs(calcXDiff) == 100) || // 2 up & 1 across
+                (abs(calcYDiff) == 100 && calcXDiff == 200) || //2 right & 1 up/down
+                (abs(calcYDiff) == 100 && calcXDiff == -200)) { //2 left & 1 up/down
+                if (!isKingCheck) {
+                    if (oldBoardSquare.getShape().getFillColor() == Color::White) {
+                        UpdateWhiteChessPiece(oldBoardSquare, newBoardSquare);
+                    }
+                    else {
+                        UpdateBlackChessPiece(oldBoardSquare, newBoardSquare);
+                    }
+                    RemoveEnemyChessPiece(newBoardSquare);
+                    playerWhite = !playerWhite;
                 }
                 else {
-                    UpdateWhiteChessPiece(chessPiece, oldX, oldY, newX, newY);
+                    isKingInCheck = true;
                 }
-                RemoveEnemyChessPiece(enemyPiece, newX, newY);
             }
             else {
-                isKingInCheck = true;
+                //invalid move - send error
+                //send error if we aren't checking for king in check
+                if (!isKingCheck) {}
             }
         }
         else {
-            //invalid move - send error
-            //send error if we aren't checking for king in check
+            //your team's piece is already in that location - send error SH
+             //send error if we aren't checking for king in check
             if (!isKingCheck) {}
         }
-    }
-    else {
-        //your team's piece is already in that location - send error SH
-         //send error if we aren't checking for king in check
-        if (!isKingCheck) {}
-    }
 
+    }
 }
 
-void Game::CalculateQueenMove(Vector2f oldBoardSquare, Vector2f newBoardSquare, int chessPiece, bool isKingCheck) {
-    int oldX = oldBoardSquare.x;
-    int oldY = oldBoardSquare.y;
-    int newX = newBoardSquare.x;
-    int newY = newBoardSquare.y;
-    int calcYDiff = newY - oldY;
-    int calcXDiff = newX - oldX;
-    int enemyPiece = ChessPieceArray[newX][newY];
+void Game::CalculateQueenMove(BoardPiece oldBoardSquare, BoardPiece newBoardSquare, bool isKingCheck) {
+    Vector2f oldBoardTile = oldBoardSquare.getShape().getPosition();
+    Vector2f newBoardTile = oldBoardSquare.getShape().getPosition();
+    int calcYDiff = newBoardTile.y - oldBoardTile.y;
+    int calcXDiff = newBoardTile.x - oldBoardTile.x;
+    bool teamPieceInNewTile = CheckForTeamPiece(newBoardSquare);
     bool isPathClear = true;
-    int currentTile;
+    BoardPiece currentTile = oldBoardSquare;
+    int locationInc = 1;
+
 
     // Figure out it path is clear  from old position to new position
-        if (calcYDiff > 0 && calcXDiff == 0) {//vertical down
+    if (!teamPieceInNewTile && !isKingInCheck) {
 
-            for (int i = oldY; i <= newY; i++) {
-                currentTile = ChessPieceArray[i + 1][oldX];
-                if (currentTile != 0) {
+        if (calcYDiff > 0 && calcXDiff == 0) {//vertical down
+            locationInc = 1;
+            while (currentTile.getShape().getPosition() != newBoardSquare.getShape().getPosition()) {
+                Vector2f newLocation;
+                newLocation.x = currentTile.getShape().getPosition().x;
+                newLocation.y = currentTile.getShape().getPosition().y + locationInc;
+                currentTile.getShape().setPosition(newLocation);
+
+                if (currentTile.getPieceType() < 6) {
                     isPathClear = false;
                     break;
                 }
+                locationInc++;
             }
+            
         }
         else if (calcYDiff < 0 && calcXDiff == 0) {//vertical up
-            for (int i = oldY; i >= newY; i--) {
-                currentTile = ChessPieceArray[i - 1][oldX];
-                if (currentTile != 0) {
+            locationInc = 1;
+            while (currentTile.getShape().getPosition() != newBoardSquare.getShape().getPosition()) {
+                Vector2f newLocation;
+                newLocation.x = currentTile.getShape().getPosition().x;
+                newLocation.y = currentTile.getShape().getPosition().y - locationInc;
+                currentTile.getShape().setPosition(newLocation);
+
+                if (currentTile.getPieceType() < 6) {
                     isPathClear = false;
                     break;
                 }
+                locationInc++;
             }
         }
         else if (calcYDiff == 0 && calcXDiff < 0) { //left across
-            for (int i = oldX; i >= newX; i--) {
-                currentTile = ChessPieceArray[oldY][i - 1];
-                if (currentTile != 0) {
+            locationInc = 1;
+            while (currentTile.getShape().getPosition() != newBoardSquare.getShape().getPosition()) {
+                Vector2f newLocation;
+                newLocation.x = currentTile.getShape().getPosition().x;
+                newLocation.y = currentTile.getShape().getPosition().y - locationInc;
+                currentTile.getShape().setPosition(newLocation);
+
+                if (currentTile.getPieceType() < 6) {
                     isPathClear = false;
                     break;
                 }
+                locationInc++;
             }
         }
         else if (calcYDiff == 0 && calcXDiff > 0) { //right across
 
-            for (int i = oldX; i <= newX; i++) {
-                currentTile = ChessPieceArray[oldY][i + 1];
-                if (currentTile != 0) {
+            locationInc = 1;
+            while (currentTile.getShape().getPosition() != newBoardSquare.getShape().getPosition()) {
+                Vector2f newLocation;
+                newLocation.x = currentTile.getShape().getPosition().x;
+                newLocation.y = currentTile.getShape().getPosition().y + locationInc;
+                currentTile.getShape().setPosition(newLocation);
+
+                if (currentTile.getPieceType() < 6) {
                     isPathClear = false;
                     break;
                 }
+                locationInc++;
             }
 
         }
         else if (calcYDiff > 0 && calcXDiff > 0 && abs(calcYDiff) == abs(calcXDiff)) { //Down Right Diag
-            for (int i = oldX + 1; i <= newX; i++) {
-                currentTile = ChessPieceArray[oldY + 1][oldX];
-                if (currentTile != 0) {
+            locationInc = 1;
+            while (currentTile.getShape().getPosition() != newBoardSquare.getShape().getPosition()) {
+                Vector2f newLocation;
+                newLocation.x = currentTile.getShape().getPosition().x + locationInc;
+                newLocation.y = currentTile.getShape().getPosition().y + locationInc;
+                currentTile.getShape().setPosition(newLocation);
+
+                if (currentTile.getPieceType() < 6) {
                     isPathClear = false;
                     break;
                 }
+                locationInc++;
             }
         }
         else if (calcYDiff > 0 && calcXDiff < 0 && abs(calcYDiff) == abs(calcXDiff)) { //Down Left Diag
-            for (int i = oldX - 1; i >= newX; i--) {
-                currentTile = ChessPieceArray[oldY + 1][i];
-                if (currentTile != 0) {
+            locationInc = 1;
+            while (currentTile.getShape().getPosition() != newBoardSquare.getShape().getPosition()) {
+                Vector2f newLocation;
+                newLocation.x = currentTile.getShape().getPosition().x - locationInc;
+                newLocation.y = currentTile.getShape().getPosition().y + locationInc;
+                currentTile.getShape().setPosition(newLocation);
+
+                if (currentTile.getPieceType() < 6) {
                     isPathClear = false;
                     break;
                 }
+                locationInc++;
             }
-
         }
         else if (calcYDiff < 0 && calcXDiff > 0 && abs(calcYDiff) == abs(calcXDiff)) {//Up left diag
-            for (int i = oldY - 1; i >= newY; i--) {
-                currentTile = ChessPieceArray[oldY - 1][i];
-                if (currentTile != 0) {
+            locationInc = 1;
+            while (currentTile.getShape().getPosition() != newBoardSquare.getShape().getPosition()) {
+                Vector2f newLocation;
+                newLocation.x = currentTile.getShape().getPosition().x - locationInc;
+                newLocation.y = currentTile.getShape().getPosition().y - locationInc;
+                currentTile.getShape().setPosition(newLocation);
+
+                if (currentTile.getPieceType() < 6) {
                     isPathClear = false;
                     break;
                 }
+                locationInc++;
             }
         }
         else if (calcYDiff < 0 && calcXDiff > 0 && abs(calcYDiff) == abs(calcXDiff)) {//Up Right Diag
-            for (int i = oldY; i >= newY; i--) {
-                currentTile = ChessPieceArray[oldY - 1][i];
-                if (currentTile != 0) {
-                    isPathClear = false;
-                    break;
-                }
+        locationInc = 1;
+        while (currentTile.getShape().getPosition() != newBoardSquare.getShape().getPosition()) {
+            Vector2f newLocation;
+            newLocation.x = currentTile.getShape().getPosition().x + locationInc;
+            newLocation.y = currentTile.getShape().getPosition().y - locationInc;
+            currentTile.getShape().setPosition(newLocation);
+
+            if (currentTile.getPieceType() < 6) {
+                isPathClear = false;
+                break;
             }
+            locationInc++;
         }
-    
+        }
+
 
         if (isPathClear) {
 
@@ -660,15 +756,14 @@ void Game::CalculateQueenMove(Vector2f oldBoardSquare, Vector2f newBoardSquare, 
                 (abs(calcYDiff) > 0 && calcXDiff == 0) || // vertical movement
                 (abs(calcXDiff) > 0 && abs(calcYDiff) > 0 && abs(calcXDiff) == abs(calcYDiff))) { // diagonal movement
                 if (!isKingCheck) {
-
-
-                    if (chessPiece > 0) {
-                        UpdateBlackChessPiece(chessPiece, oldX, oldY, newX, newY);
+                    if (oldBoardSquare.getShape().getFillColor() == Color::White) {
+                        UpdateWhiteChessPiece(oldBoardSquare, newBoardSquare);
                     }
                     else {
-                        UpdateWhiteChessPiece(chessPiece, oldX, oldY, newX, newY);
+                        UpdateBlackChessPiece(oldBoardSquare, newBoardSquare);
                     }
-                    RemoveEnemyChessPiece(enemyPiece, newX, newY);
+                    RemoveEnemyChessPiece(newBoardSquare);
+                    playerWhite = !playerWhite;
                 }
                 else {
                     isKingInCheck = true;
@@ -683,187 +778,222 @@ void Game::CalculateQueenMove(Vector2f oldBoardSquare, Vector2f newBoardSquare, 
             //send error
             if (!isKingCheck) {}
         }
-}
-
-void Game::CalculateKingMove(Vector2f oldBoardSquare, Vector2f newBoardSquare, int chessPiece, bool isKingCheck) {
-    int oldX = oldBoardSquare.x;
-    int oldY = oldBoardSquare.y;
-    int newX = newBoardSquare.x;
-    int newY = newBoardSquare.y;
-    int calcYDiff = newY - oldY;
-    int calcXDiff = newX - oldX;
-    int enemyPiece = ChessPieceArray[newX][newY];
-    bool isPathClear = true;
-    int currentTile;
-
-    if((abs(calcXDiff) == 1 && calcYDiff ==0) ||
-        (abs(calcYDiff) == 1 && calcXDiff == 0) ||
-        (abs(calcXDiff) == 1 && abs(calcYDiff) == 1)) {
-        if (!isKingCheck) {
-            if (chessPiece > 0) {
-                UpdateBlackChessPiece(chessPiece, oldX, oldY, newX, newY);
-            }
-            else {
-                UpdateWhiteChessPiece(chessPiece, oldX, oldY, newX, newY);
-            }
-            RemoveEnemyChessPiece(enemyPiece, newX, newY);
-        }
-        else {
-            isKingInCheck = true;
-        }
     }
     else {
-        //send error
-        if (!isKingCheck) {}
-        else {
-            //THEY LOSE - SEND OUT MESSAGE TO END GAME - SH
+    //king is in check - message
+    }
+}
 
+void Game::CalculateKingMove(BoardPiece oldBoardSquare, BoardPiece newBoardSquare, bool isKingCheck) {
+    Vector2f oldBoardTile = oldBoardSquare.getShape().getPosition();
+    Vector2f newBoardTile = oldBoardSquare.getShape().getPosition();
+    int calcYDiff = newBoardTile.y - oldBoardTile.y;
+    int calcXDiff = newBoardTile.x - oldBoardTile.x;
+    bool teamPieceInNewTile = CheckForTeamPiece(newBoardSquare);
+    bool isPathClear = true;
+
+    if (!teamPieceInNewTile) {
+
+        if ((abs(calcXDiff) == 100 && calcYDiff == 0) ||  // King moving Horizontally
+            (abs(calcYDiff) == 100 && calcXDiff == 0) ||  // King moving Vertically
+            (abs(calcXDiff) == 100 && abs(calcYDiff) == 100)) {  // King moving diagonally
+            if (!isKingCheck) {
+                if (oldBoardSquare.getShape().getFillColor() == Color::White) {
+                    UpdateWhiteChessPiece(oldBoardSquare, newBoardSquare);
+                }
+                else {
+                    UpdateBlackChessPiece(oldBoardSquare, newBoardSquare);
+                }
+                RemoveEnemyChessPiece(newBoardSquare);
+                playerWhite = !playerWhite;
+                isKingInCheck = false;
+            }
+            else {
+                isKingInCheck = true;
+            }
+        }
+        else {
+            //send error
+            if (!isKingCheck) {
+            }
+            else {
+                //THEY LOSE - SEND OUT MESSAGE TO END GAME - SH
+
+            }
         }
     }
-
-
 }
 
 void Game::IsKingInCheck() {
     int currentTile;
-    Vector2f currentBoardTile, whiteKingBoardTile, blackKingBoardTile;
+    int whiteKingLoc = 0;
+    int blackKingLoc = 0;
 
-    for (int i = 0; i < 8; i++) {
-        for (int j = 0; j < 8; j++) {
-            if (ChessPieceArray[i][j] == 4) {
-                blackKingBoardTile.x = i;
-                blackKingBoardTile.y = j;
-            }
-            else if(ChessPieceArray[i][j] == -4) {
-                whiteKingBoardTile.x = i;
-                whiteKingBoardTile.y = j;
-            }
+    for (int i = 0; i < boardTiles.size(); i++) {
+        if (boardTiles[i].getPieceType() == 3 && boardTiles[i].getShape().getFillColor() == Color::White) {
+            whiteKingLoc = i;
+        }
+        else if (boardTiles[i].getPieceType() == 3 && boardTiles[i].getShape().getFillColor() == Color::Black) {
+            blackKingLoc = i;
         }
     }
 
-    for (int i = 0; i < 8; i++) {
-        for (int j = 0; j < 8; j++) {
-            currentTile = ChessPieceArray[i][j];
+    for (int i = 0; i < boardTiles.size(); i++) {
+        BoardPiece currentBoardTile = boardTiles[i];
+        currentTile = currentBoardTile.getPieceType();
 
-            //can the piece land on the king?
-            //is it a valid move? (ie is path clear etc)
-            switch (currentTile) {
-            case 1:
-                CalculateRookMove(currentBoardSquare, whiteKingBoardTile, currentTile, true);
-                CalculateRookMove(currentBoardSquare, blackKingBoardTile, currentTile, true);
-                break;
-            case 2:
-                CalculateKnightMove(currentBoardSquare, whiteKingBoardTile, currentTile, true);
-                CalculateKnightMove(currentBoardSquare, blackKingBoardTile, currentTile, true);
-                break;
-            case 3:
-                CalculateBishopMove(currentBoardSquare, whiteKingBoardTile, currentTile, true);
-                CalculateBishopMove(currentBoardSquare, blackKingBoardTile, currentTile, true);
-                break;
-            case 4:
-                CalculateKingMove(currentBoardSquare, whiteKingBoardTile, currentTile, true);
-                CalculateKingMove(currentBoardSquare, blackKingBoardTile, currentTile, true);
-                break;
-            case 5:
-                CalculateQueenMove(currentBoardSquare, whiteKingBoardTile, currentTile, true);
-                CalculateQueenMove(currentBoardSquare, blackKingBoardTile, currentTile, true);
-                break;
-            case 6:
-                CalculatePawnMove(currentBoardSquare, whiteKingBoardTile, currentTile, true);
-                CalculatePawnMove(currentBoardSquare, blackKingBoardTile, currentTile, true);
-                break;
-            }
+        //can the piece land on the king?
+        //is it a valid move? (ie is path clear etc)
+        switch (currentTile) {
+        case 0:
+            CalculateRookMove(currentBoardTile, boardTiles[whiteKingLoc], true);
+            CalculateRookMove(currentBoardTile, boardTiles[blackKingLoc], true);
+            break;
+        case 1:
+            CalculateKnightMove(currentBoardTile, boardTiles[whiteKingLoc], true);
+            CalculateKnightMove(currentBoardTile, boardTiles[blackKingLoc], true);
+            break;
+        case 2:
+            CalculateBishopMove(currentBoardTile, boardTiles[whiteKingLoc], true);
+            CalculateBishopMove(currentBoardTile, boardTiles[blackKingLoc], true);
+            break;
+        case 3:
+            CalculateKingMove(currentBoardTile, boardTiles[whiteKingLoc], true);
+            CalculateKingMove(currentBoardTile, boardTiles[blackKingLoc], true);
+            break;
+        case 4:
+            CalculateQueenMove(currentBoardTile, boardTiles[whiteKingLoc], true);
+            CalculateQueenMove(currentBoardTile, boardTiles[blackKingLoc], true);
+            break;
+        case 5:
+            CalculatePawnMove(currentBoardTile, boardTiles[whiteKingLoc], true);
+            CalculatePawnMove(currentBoardTile, boardTiles[blackKingLoc], true);
+            break;
+        }
 
-            if (isKingInCheck) {
-                break;
+        if (isKingInCheck) {
+            break;
                
-            }
         }
     }
+    
 
     if (isKingInCheck) {
         //send error - only let user move king
     }
 }
 
-void Game::UpdateWhiteChessPiece(int chessPiece, int oldX, int oldY, int newX, int newY) {
-    //valid - update chessPieceArray & Move image to new location
-    ChessPieceArray[oldY][oldX] = 0;
-    ChessPieceArray[newX][newY] = chessPiece;
-
-    
-    //whitePieces.push_back(BoardPiece(Vector2f(tileWidth, tileWidth), Vector2f(tileWidth * newY, tileWidth * newX), Color::White, chessPiece));
-    //whitePieces[newX + newY].getShape().setTexture(&whitePieceTextures[chessPiece]);
-
+void Game::UpdateWhiteChessPiece(BoardPiece oldBoardSquare, BoardPiece newBoardSquare) {
+    int whitePiece;
+    for (int i = 0; i < whitePieces.size(); i++) {
+        if (whitePieces[i].getShape().getPosition() == oldBoardSquare.getShape().getPosition()) {
+            whitePiece = i;
+            break;
+        }
+    }
+    Vector2f newPosition = newBoardSquare.getShape().getPosition();
+    whitePieces[whitePiece].getShape().setPosition(newPosition);
     whiteMoveCount++;
 }
 
-void Game::UpdateBlackChessPiece(int chessPiece, int oldX, int oldY, int newX, int newY) {
-    //valid - update chessPieceArray & Move image to new location
-    ChessPieceArray[oldY][oldX] = 0;
-    ChessPieceArray[newX][newY] = chessPiece;
-
-
-    //blackPieces.push_back(BoardPiece(Vector2f(tileWidth, tileWidth), Vector2f(tileWidth * newY, tileWidth * newX), Color::White, chessPiece));
-    //blackPieces[newX + newY].getShape().setTexture(&blackPieceTextures[abs(chessPiece)]);
-
+void Game::UpdateBlackChessPiece(BoardPiece oldBoardSquare, BoardPiece newBoardSquare) {
+    int blackPiece;
+    for (int i = 0; i < blackPieces.size(); i++) {
+        if (blackPieces[i].getShape().getPosition() == oldBoardSquare.getShape().getPosition()) {
+            blackPiece = i;
+            break;
+        }
+    }
+    Vector2f newPosition = newBoardSquare.getShape().getPosition();
+    blackPieces[blackPiece].getShape().setPosition(newPosition);
     blackMoveCount++;
 }
 
-void Game::RemoveEnemyChessPiece(int enemyPiece, int enemyLocX, int enemyLocY) {
-    if (enemyPiece != 0) {
+void Game::RemoveEnemyChessPiece(BoardPiece newBoardPiece) {
+    int num;
+    if (newBoardPiece.getPieceType() < 6) {
         //remove enemyPiece from Sprites
+        if (newBoardPiece.getShape().getFillColor() == Color::White) {
+            for (int i = 0; i < whitePieces.size(); i++) {
+                if (newBoardPiece.getShape().getPosition() == whitePieces[i].getShape().getPosition()) {
+                    num = i;
+                    break;
+                }
+            }
+
+            int arraySize = whitePieces.size();
+            if (num != arraySize - 1) {
+                std::swap(whitePieces[num], whitePieces[arraySize - 1]);
+            }
+            whitePieces.pop_back();
+        }
+        else {
+            for (int i = 0; i < blackPieces.size(); i++) {
+                if (newBoardPiece.getShape().getPosition() == blackPieces[i].getShape().getPosition()) {
+                    num = i;
+                    break;
+                }
+            }
+
+            int arraySize = blackPieces.size();
+            if (num != arraySize - 1) {
+                std::swap(blackPieces[num], blackPieces[arraySize - 1]);
+            }
+            blackPieces.pop_back();
+        }
     }
 }
 
-bool Game::CheckForTeamPiece(int chessPiece, int newLocX, int newLocY) {
-    bool isValid = true;
-    if ((chessPiece < 0 && ChessPieceArray[newLocX][newLocY] < 0) ||
-        (chessPiece > 0 && ChessPieceArray[newLocX][newLocY] > 0)) { //white team
-        isValid = false;
+bool Game::CheckForTeamPiece(BoardPiece newBoardSquare) {
+    bool teamPieceInNewTile = false;
+    if (newBoardSquare.getShape().getFillColor() == Color::White && newBoardSquare.getPieceType() < 6 && playerWhite ||
+            newBoardSquare.getShape().getFillColor() == Color::Black && newBoardSquare.getPieceType() < 6 && !playerWhite) {
+            teamPieceInNewTile = true;
     }
-    
-    return isValid;
+
+    return teamPieceInNewTile;
 }
 
-void Game::CalculateMove(Vector2i pos[]) {
+void Game::CalculateMove(Vector2i mouseClick1, Vector2i mouseClick2) {
 
     //Calculate which tile user clicks on
-    Vector2f oldBoardSquare = CalcMouseLocation(Vector2f(pos[0]));
-    Vector2f newBoardSquare = CalcMouseLocation(Vector2f(pos[1]));
+    BoardPiece oldBoardSquare = CalcMouseLocation(Vector2f(mouseClick1));
+    BoardPiece newBoardSquare = CalcMouseLocation(Vector2f(mouseClick2));
 
-    int j = oldBoardSquare.x;
-    int i = oldBoardSquare.y;
+    int j = oldBoardSquare.getShape().getPosition().x;
+    int i = oldBoardSquare.getShape().getPosition().y;
 
     //Check if there's a chess piece on the old location
-    if (ChessPieceArray[i][j] != 0) {
+    if (oldBoardSquare.getPieceType() < 6) {
         //There's a piece in the old square! Figure out if the new location is valid
-        if (ChessPieceArray[i][j] == -1 || ChessPieceArray[i][j] == 1) //rook
+        if (oldBoardSquare.getPieceType() == 0) //rook
         {
-            CalculateRookMove(oldBoardSquare, newBoardSquare, ChessPieceArray[i][j], false);
+            CalculateRookMove(oldBoardSquare, newBoardSquare, false);
         }
-        else if (ChessPieceArray[i][j] == -2 || ChessPieceArray[i][j] == 2) //knight
+        else if (oldBoardSquare.getPieceType() == 1) //knight
         {
-            CalculateKnightMove(oldBoardSquare, newBoardSquare, ChessPieceArray[i][j], false);
+            CalculateKnightMove(oldBoardSquare, newBoardSquare, false);
         }
-        else if (ChessPieceArray[i][j] == -3 || ChessPieceArray[i][j] == 3) //bishop
+        else if (oldBoardSquare.getPieceType() == 2) //bishop
         {
-            CalculateBishopMove(oldBoardSquare, newBoardSquare, ChessPieceArray[i][j], false);
+            CalculateBishopMove(oldBoardSquare, newBoardSquare, false);
         }
-        else if (ChessPieceArray[i][j] == -4 || ChessPieceArray[i][j] == 4) //king
+        else if (oldBoardSquare.getPieceType() == 3) //king
         {
-            CalculateKingMove(oldBoardSquare, newBoardSquare, ChessPieceArray[i][j], false);
+            CalculateKingMove(oldBoardSquare, newBoardSquare, false);
         }
-        else if (ChessPieceArray[i][j] == -5 || ChessPieceArray[i][j] == 5) //queen
+        else if (oldBoardSquare.getPieceType() == 4) //queen
         {
-            CalculateQueenMove(oldBoardSquare, newBoardSquare, ChessPieceArray[i][j], false);
+            CalculateQueenMove(oldBoardSquare, newBoardSquare, false);
         }
-        else if (ChessPieceArray[i][j] == -6 || ChessPieceArray[i][j] == 6) //pawn
+        else if (oldBoardSquare.getPieceType() == 5) //pawn
         {
-            CalculatePawnMove(oldBoardSquare, newBoardSquare, ChessPieceArray[i][j], false);
+            CalculatePawnMove(oldBoardSquare, newBoardSquare, false);
         }
 
         IsKingInCheck();
+
+     
     }
     else {
         //send user error message
@@ -883,17 +1013,33 @@ void Game::loop() {
             if (event.type == Event::Closed || Keyboard::isKeyPressed(Keyboard::Escape)) {
                 window.close();
             }
+
         }
-        Vector2i mouse = Mouse::getPosition(window);
-        std::cout << "pos_x=" << mouse.x << " pos_y=" << mouse.y << "\n";
         window.clear(Color::Black);
 
        if (event.type == Event::MouseButtonPressed) {
-            pos[mouseCount] = Mouse::getPosition(window);
-            std::cout << "pos_x=" << pos[mouseCount].x << " pos_y=" << pos[mouseCount].y << "\n";
-            mouseCount++;
-            if (mouseCount == 2) {
-                CalculateMove(pos);
+           
+           std::cout << "mouseCount=" << mouseCount;
+            if (mouseCount == 0) {
+                mouseClick1 = Mouse::getPosition(window);//Register mouse click - SH
+                std::cout << "pos_x=" << mouseClick1.x << " pos_y=" << mouseClick1.y << "\n"; //output location in console
+                BoardPiece mouseLocation = CalcMouseLocation(Vector2f(mouseClick1));
+
+
+                if (playerWhite && mouseLocation.getPieceType() < 6 && mouseLocation.getShape().getFillColor() == Color::White) { //white player's turn
+                    mouseCount++; //increase count of array
+                }
+                else if (!playerWhite && mouseLocation.getShape().getFillColor() == Color::Black) { //black player's turn
+                    mouseCount++; //increase count of array
+                }
+                else {
+                    //Error - clicked opponent's piece
+                }
+            }
+            else { //when we have 2 mouse clicks (ie player has made a move
+                mouseClick2 = Mouse::getPosition(window);//Register mouse click - SH
+                std::cout << "pos_x=" << mouseClick2.x << " pos_y=" << mouseClick2.y << "\n"; //output location in console
+                CalculateMove(mouseClick1, mouseClick2); //Calculte the move
             }
             
         } 
@@ -918,7 +1064,6 @@ void Game::loop() {
 int main() {
     Game gm;
 
-    gm.SetBoardLocationArray();
     gm.initWhitePieces();
     gm.initBlackPieces();
     gm.initBoardPieces();
@@ -927,3 +1072,274 @@ int main() {
     // Exit program.
     return 0;
 }
+
+
+////include classes and headers
+//#include <iostream>
+//#include <string>
+//#include <vector>
+//
+//#include <SFML/Audio.hpp>
+//#include <SFML/Graphics.hpp>
+//
+//class BoardPiece {
+//private:
+//    sf::Texture pieceTexture;
+//
+//    sf::RectangleShape piece;
+//
+//    int pieceType; // 0 = rook, 1 = knight, 2 = bishop, 3 = king, 4 = queen, 5 = pawn, 6 = light tile, 7 = dark tile.
+//public:
+//    BoardPiece(sf::Vector2f, sf::Vector2f, sf::Color, int);
+//
+//    sf::RectangleShape& getShape();
+//    int getPieceType();
+//
+//    void setPieceType(int);
+//};
+//
+//BoardPiece::BoardPiece(sf::Vector2f size, sf::Vector2f position, sf::Color color, int pType) {
+//    piece.setSize(size);
+//    piece.setPosition(position);
+//    piece.setFillColor(color);
+//
+//    pieceType = pType;
+//}
+//
+//sf::RectangleShape& BoardPiece::getShape() {
+//    return piece;
+//}
+//
+//class Game {
+//private:
+//    // Init general variables.
+//    int pieceSize;
+//
+//    // Init white piece variables.
+//    std::vector<int> whitePieceOrder;
+//    std::vector<std::string> whitePieceTextureNames;
+//    std::vector<sf::Texture> whitePieceTextures;
+//    std::vector<BoardPiece> whitePieces;
+//
+//    // Init black piece variables.
+//    std::vector<int> blackPieceOrder;
+//    std::vector<std::string> blackPieceTextureNames;
+//    std::vector<sf::Texture> blackPieceTextures;
+//    std::vector<BoardPiece> blackPieces;
+//
+//    // Init board piece variables.
+//    std::vector<std::string> boardTileTextureNames;
+//    std::vector<sf::Texture> boardTileTextures;
+//    std::vector<BoardPiece> boardTiles;
+//
+//    // Init window.
+//    sf::RenderWindow window;
+//
+//public:
+//
+//    Game();
+//
+//    void initWhitePieces();
+//    void initBlackPieces();
+//    void initBoardPieces();
+//
+//    void loop();
+//
+//    //void movePiece(int, int, int); // X, Y, piece to move.
+//
+//};
+//
+//Game::Game() {
+//    // Init general variables.
+//    pieceSize = 100;
+//
+//    // Init white piece variables.
+//    whitePieceOrder = { 0, 1, 2, 3, 4, 2, 1, 0, 5 };
+//    whitePieceTextureNames = {
+//        "w_rook_png_128px.png", "w_knight_png_128px.png",
+//        "w_bishop_png_128px.png", "w_king_png_128px.png",
+//        "w_queen_png_128px.png", "w_bishop_png_128px.png",
+//        "w_knight_png_128px.png", "w_rook_png_128px.png",
+//        "w_pawn_png_128px.png"
+//    };
+//    whitePieceTextures.resize(9);
+//
+//    // Init black piece variables.
+//    blackPieceOrder = { 0, 1, 2, 3, 4, 2, 1, 0, 5 };
+//    blackPieceTextureNames = {
+//        "b_rook_png_128px.png", "b_knight_png_128px.png",
+//        "b_bishop_png_128px.png", "b_king_png_128px.png",
+//        "b_queen_png_128px.png", "b_bishop_png_128px.png",
+//        "b_knight_png_128px.png", "b_rook_png_128px.png",
+//        "b_pawn_png_128px.png"
+//    };
+//    blackPieceTextures.resize(9);
+//
+//    // Init board piece variables.
+//    boardTileTextureNames = {
+//        "square_brown_light_png_128px.png",
+//        "square_brown_dark_png_128px.png"
+//    };
+//    boardTileTextures.resize(2);
+//
+//    // Init window.
+//    window.create(sf::VideoMode(800, 800), "SFML works!"/*, sf::Style::Fullscreen*/);
+//}
+//
+//void Game::initWhitePieces() {
+//    // Create white piece textures.
+//    for (int i = 0; i < whitePieceTextureNames.size(); i++) {
+//        if (!whitePieceTextures[i].loadFromFile("bin/images/" + whitePieceTextureNames[i])) {
+//            std::cout << "Error getting " << whitePieceTextureNames[i] << ". Shutting down." << std::endl;
+//            //return 1;
+//        }
+//    }
+//
+//    // Create white Pieces.
+//    for (int i = 0; i < whitePieceOrder.size(); i++) {
+//        if (whitePieceOrder[i] == 5) {
+//            // Create white pawns.
+//            for (int j = 0; j < 8; j++) {
+//                whitePieces.push_back(BoardPiece(sf::Vector2f(pieceSize, pieceSize), sf::Vector2f(pieceSize * j, pieceSize), sf::Color::White, whitePieceOrder[i]));
+//                whitePieces[i + j].getShape().setTexture(&whitePieceTextures[i]);
+//            }
+//        }
+//        else {
+//            // Create all other white pieces.
+//            whitePieces.push_back(BoardPiece(sf::Vector2f(pieceSize, pieceSize), sf::Vector2f(pieceSize * i, 0), sf::Color::White, whitePieceOrder[i]));
+//            whitePieces[i].getShape().setTexture(&whitePieceTextures[i]);
+//        }
+//    }
+//}
+//
+//void Game::initBlackPieces() {
+//    // Create black piece textures.
+//    for (int i = 0; i < blackPieceTextureNames.size(); i++) {
+//        if (!blackPieceTextures[i].loadFromFile("bin/images/" + blackPieceTextureNames[i])) {
+//            std::cout << "Error getting " << blackPieceTextureNames[i] << ". Shutting down." << std::endl;
+//            //return 1;
+//        }
+//    }
+//
+//    // Create black Pieces.
+//    for (int i = 0; i < blackPieceOrder.size(); i++) {
+//        if (blackPieceOrder[i] == 5) {
+//            // Create white pawns.
+//            for (int j = 0; j < 8; j++) {
+//                blackPieces.push_back(BoardPiece(sf::Vector2f(pieceSize, pieceSize), sf::Vector2f(pieceSize * j, pieceSize * 6), sf::Color::White, blackPieceOrder[i]));
+//                blackPieces[i + j].getShape().setTexture(&blackPieceTextures[i]);
+//            }
+//        }
+//        else {
+//            // Create all other white pieces.
+//            blackPieces.push_back(BoardPiece(sf::Vector2f(pieceSize, pieceSize), sf::Vector2f(pieceSize * i, pieceSize * 7), sf::Color::White, blackPieceOrder[i]));
+//            blackPieces[i].getShape().setTexture(&blackPieceTextures[i]);\
+//        }
+//    }
+//}
+//
+//void Game::initBoardPieces() {
+//    int startingColor = 0; // 0 = light tile, 1 = dark tile
+//    int currentColor = startingColor;
+//
+//    // Create board piece textures.
+//    for (int i = 0; i < boardTileTextureNames.size(); i++) {
+//        if (!boardTileTextures[i].loadFromFile("bin/images/" + boardTileTextureNames[i])) {
+//            std::cout << "Error getting " << boardTileTextureNames[i] << ". Shutting down." << std::endl;
+//            //return 1;
+//        }
+//    }
+//
+//    // Create board pieces.
+//    for (int i = 0; i < 8; i++) {
+//        for (int j = 0; j < 8; j++) {
+//            if (currentColor == 0) {
+//                boardTiles.push_back(BoardPiece(sf::Vector2f(pieceSize, pieceSize), sf::Vector2f(pieceSize * j, pieceSize * i), sf::Color::White, 6));
+//                boardTiles[(i * 8) + j].getShape().setTexture(&boardTileTextures[0]);
+//                currentColor++;
+//            }
+//            else {
+//                boardTiles.push_back(BoardPiece(sf::Vector2f(pieceSize, pieceSize), sf::Vector2f(pieceSize * j, pieceSize * i), sf::Color::White, 7));
+//                boardTiles[(i * 8) + j].getShape().setTexture(&boardTileTextures[1]);
+//                currentColor--;
+//            }
+//        }
+//
+//        if (startingColor == 0) {
+//            startingColor++;
+//            currentColor = startingColor;
+//        }
+//        else {
+//            startingColor--;
+//            currentColor = startingColor;
+//        }
+//    }
+//}
+//
+//void Game::loop() {
+//    // SFML game Loop.
+//    while (window.isOpen()) {
+//        sf::Event event;
+//        while (window.pollEvent(event)) {
+//            if (event.type == sf::Event::Closed || sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) {
+//                window.close();
+//            }
+//        }
+//
+//        if (event.type == Event::MouseButtonPressed) {
+//            whitePieces[0].getShape().move(Vector2f(32, 0));
+//            //pos[mouseCount] = Mouse::getPosition(window); //Register mouse click - SH
+//            //std::cout << "pos_x=" << pos[mouseCount].x << " pos_y=" << pos[mouseCount].y << "\n"; //output location in console
+//            //if (mouseCount == 0) {
+//            //    Vector2f mouseLocation = CalcMouseLocation(Vector2f(pos[mouseCount]));
+//            //    int x = mouseLocation.x;
+//            //    int y = mouseLocation.y;
+//            //    int firstChessPiece = ChessPieceArray[x][y];
+//            //
+//            //    if (playerWhite && firstChessPiece < 0) { //white player's turn
+//            //        mouseCount++; //increase count of array
+//            //    }
+//            //    else if (!playerWhite && firstChessPiece > 0) { //black player's turn
+//            //        mouseCount++; //increase count of array
+//            //    }
+//            //    else {
+//            //        //Error - clicked opponent's piece
+//            //    }
+//            //}
+//            //            
+//            //if (mouseCount == 2) { //when we have 2 mouse clicks (ie player has made a move
+//            //    CalculateMove(pos); //Calculte the move
+//            //}
+//                        
+//        } 
+//
+//        window.clear(sf::Color::Black);
+//        for (auto x : boardTiles) { window.draw(x.getShape()); }
+//        for (auto x : whitePieces) { window.draw(x.getShape()); }
+//        for (auto x : blackPieces) { window.draw(x.getShape()); }
+//        window.display();
+//    }
+//}
+//
+///*void movePiece(int x, int y, int piece) {
+//    /*bool xComplete = 0, yComplete = 0;
+//    while(xComplete == 0 && yComplete == 0) {
+//
+//    }*
+//
+//    if() {
+//
+//    }
+//}*/
+//
+//int main() {
+//    Game gm;
+//
+//    gm.initWhitePieces();
+//    gm.initBlackPieces();
+//    gm.initBoardPieces();
+//    gm.loop();
+//
+//    // Exit program.
+//    return 0;
+//}
